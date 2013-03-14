@@ -6,9 +6,9 @@ Project {
     references: [
         "src/3rdparty/k8json/k8json.qbs",
         "src/api.qbs",
-        "src/qml/qml.qbs",
         "src/oauth/oauth.qbs",
+        "src/qml/qml.qbs",
         "src/directauth/directauth.qbs",
-        "examples/examples.qbs"
+//        "examples/examples.qbs"
     ]
 }

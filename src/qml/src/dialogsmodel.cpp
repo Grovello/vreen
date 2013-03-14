@@ -60,7 +60,7 @@ Vreen::Reply *DialogsModel::getDialogs(int count, int offset, int previewLength)
         qWarning("Dialog model must have a client!");
         return 0;
     }
-    auto reply = client()->roster()->getDialogs(offset, count, previewLength);
+    auto reply = client()->getDialogs(offset, count, previewLength);
     connect(reply, SIGNAL(resultReady(QVariant)), SLOT(onDialogsReceived(QVariant)));
     return reply;
 }

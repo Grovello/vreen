@@ -70,7 +70,7 @@ private slots:
     void onPostLikeAdded(int id, int likes, int reposts, bool isRetweeted);
     void onPostLikeDeleted(int postId, int count);
 private:
-    inline Vreen::Roster *roster() const { return client()->roster(); }
+    inline Vreen::BuddyManager *buddyManager() const { return client()->buddyManager(); }
     inline Vreen::Client *client() const { return m_contact->client(); }
     QPointer<Vreen::Contact> m_contact;
     QPointer<Vreen::WallSession> m_session;

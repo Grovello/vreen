@@ -29,13 +29,14 @@
 #include "reply_p.h"
 #include "connection.h"
 #include "roster.h"
-#include "reply.h"
+#include "buddymanager.h"
 #include "message.h"
 #include "longpoll.h"
 #include "utils.h"
 #include <QDebug>
 #include <QTimer>
 #include <QPointer>
+#include "groupmanager.h"
 
 namespace Vreen {
 
@@ -43,7 +44,8 @@ class ClientPrivate
 {
     Q_DECLARE_PUBLIC(Client)
 public:
-    ClientPrivate(Client *q) : q_ptr(q), isInvisible(false), trackMessages(true)
+    ClientPrivate(Client *q) : q_ptr(q),
+        isInvisible(false), trackMessages(true)
     {
         onlineUpdater.setInterval(15000 * 60);
         onlineUpdater.setSingleShot(false);
@@ -53,8 +55,8 @@ public:
     QString login;
     QString password;
     QPointer<Connection> connection;
-    QPointer<Roster> roster;
     QPointer<LongPoll> longPoll;
+    QPointer<BuddyManager> buddyManager;
     QPointer<GroupManager> groupManager;
     QString activity;
     bool isInvisible;

@@ -37,11 +37,14 @@ Client::Client(QObject *parent) :
     QObject(parent),
     d_ptr(new ClientPrivate(this))
 {
+    Q_D(Client);
+    d->longPoll = new LongPoll(this);
+    d->buddyManager = new BuddyManager(this);
+    d->groupManager = new GroupManager(this);
 }
 
 Client::Client(const QString &login, const QString &password, QObject *parent) :
-    QObject(parent),
-    d_ptr(new ClientPrivate(this))
+    Client(parent)
 {
     Q_D(Client);
     d->login = login;
@@ -100,15 +103,6 @@ Connection *Client::connection() const
     return d_func()->connection.data();
 }
 
-Connection *Client::connection()
-{
-    Q_D(Client);
-    if (d->connection.isNull())
-        qWarning("Unknown method of connection. Use oauth webkit connection");
-    //  setConnection(new DirectConnection(this));
-    return d_func()->connection.data();
-}
-
 void Client::setConnection(Connection *connection)
 {
     Q_D(Client);
@@ -118,6 +112,8 @@ void Client::setConnection(Connection *connection)
         }
 
         d->connection = connection;
+        if (connection->uid())
+            emit meChanged(me());
         connect(connection, SIGNAL(connectionStateChanged(Vreen::Client::State)),
                 this, SLOT(_q_connection_state_changed(Vreen::Client::State)));
         connect(connection, SIGNAL(error(Vreen::Client::Error)), this, SIGNAL(error(Vreen::Client::Error)));
@@ -126,18 +122,9 @@ void Client::setConnection(Connection *connection)
     }
 }
 
-Roster *Client::roster() const
+BuddyManager *Client::buddyManager() const
 {
-    return d_func()->roster.data();
-}
-
-Roster *Client::roster()
-{
-    Q_D(Client);
-    if (d->roster.isNull()) {
-        d->roster = new Roster(this, d->connection.isNull() ? 0 : d->connection->uid());
-    }
-    return d->roster.data();
+    return d_func()->buddyManager.data();
 }
 
 LongPoll *Client::longPoll() const
@@ -145,28 +132,9 @@ LongPoll *Client::longPoll() const
     return d_func()->longPoll.data();
 }
 
-LongPoll *Client::longPoll()
-{
-    Q_D(Client);
-    if (d->longPoll.isNull()) {
-        d->longPoll = new LongPoll(this);
-
-        emit longPollChanged(d->longPoll.data());
-    }
-    return d->longPoll.data();
-}
-
 GroupManager *Client::groupManager() const
 {
     return d_func()->groupManager.data();
-}
-
-GroupManager *Client::groupManager()
-{
-    Q_D(Client);
-    if (!d->groupManager)
-        d->groupManager = new GroupManager(this);
-    return d->groupManager.data();
 }
 
 Reply *Client::request(const QUrl &url)
@@ -187,22 +155,18 @@ Reply *Client::request(const QString &method, const QVariantMap &args)
 
 Buddy *Client::me() const
 {
-    if (auto r = roster())
-        return r->owner();
-    return 0;
-}
-
-Buddy *Client::me()
-{
-    return roster()->owner();
+    Q_D(const Client);
+    if (d->connection && d->connection->uid())
+        return buddyManager()->buddy(d->connection->uid());
+    return nullptr;
 }
 
 Contact *Client::contact(int id) const
 {
     Contact *contact = 0;
     if (id > 0) {
-        if (roster())
-            contact = roster()->buddy(id);
+        if (buddyManager())
+            contact = buddyManager()->buddy(id);
         if (!contact && groupManager())
             contact = groupManager()->group(id);
     } else if (id < 0 && groupManager())
@@ -377,6 +341,39 @@ ReplyBase<MessageList> *ClientPrivate::getMessages(Client *client, const IdList 
 												   MessageListHandler(client->id()));
 }
 
+/*!
+ * \brief Roster::getDialogs
+ * \param offset
+ * \param count
+ * \param previewLength
+ * \return
+ */
+Reply *Client::getDialogs(int count, int offset, int previewLength)
+{
+    QVariantMap args;
+    args.insert("count", count);
+    args.insert("offset", offset);
+    if (previewLength != -1)
+        args.insert("preview_length", previewLength);
+    return request("messages.getDialogs", args);
+}
+
+/*!
+ * \brief Roster::getMessages
+ * \param offset
+ * \param count
+ * \param filter
+ * \return
+ */
+Reply *Client::getMessages(int count, int offset, Message::Filter filter)
+{
+    QVariantMap args;
+    args.insert("count", count);
+    args.insert("offset", offset);
+    args.insert("filter", filter);
+    return request("messages.get", args);
+}
+
 void ClientPrivate::setOnlineUpdaterRunning(bool set)
 {
     if (set) {
@@ -396,10 +393,8 @@ void ClientPrivate::_q_connection_state_changed(Client::State state)
         break;
     case Client::StateOnline:
         emit q->onlineStateChanged(true);
-        if (!roster.isNull()) {
-            roster->setUid(connection->uid());
-            emit q->meChanged(roster->owner());
-        }
+        if (connection->uid())
+            emit q->meChanged(q->me());
         if (!isInvisible)
             setOnlineUpdaterRunning(true);
         break;

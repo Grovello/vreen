@@ -29,7 +29,7 @@
 #include <QThread>
 #include <QTextDocument>
 #include <message.h>
-#include <roster.h>
+#include <buddymanager.h>
 #include <longpoll.h>
 #include <utils.h>
 
@@ -60,7 +60,7 @@ QObject *Client::request(const QString &method, const QVariantMap &args)
 
 Vreen::Contact *Client::contact(int id)
 {
-    return roster()->buddy(id);
+    return buddyManager()->buddy(id);
 }
 
 void Client::onOnlineStateChanged(bool isOnline)
@@ -89,14 +89,14 @@ void Client::onMessageAdded(const Vreen::Message &msg)
 
 void Client::onReplyCreated(Vreen::Reply *reply)
 {
-    qDebug() << "--SendReply:" << reply->networkReply()->url();
+    //qDebug() << "--SendReply:" << reply->networkReply()->url();
     connect(reply, SIGNAL(resultReady(QVariant)),SLOT(onReplyFinished(QVariant)));
 }
 
 void Client::onReplyFinished(const QVariant &)
 {
-    Vreen::Reply *reply = Vreen::sender_cast<Vreen::Reply*>(sender());
-    qDebug() << "--Reply finished" << reply->networkReply()->url().encodedPath();
+    //Vreen::Reply *reply = Vreen::sender_cast<Vreen::Reply*>(sender());
+    //qDebug() << "--Reply finished" << reply->networkReply()->url().encodedPath();
     //qDebug() << "--data" << reply->response();
 }
 

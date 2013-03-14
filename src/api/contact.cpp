@@ -25,7 +25,7 @@
 #include <QDebug>
 #include "contact_p.h"
 #include "message.h"
-#include "roster_p.h"
+#include "buddymanager_p.h"
 #include "groupmanager_p.h"
 
 namespace Vreen {
@@ -150,7 +150,7 @@ QStringList Buddy::tags() const
     QStringList tags;
     foreach (auto data, d->tagIdList) {
         int id = data.toInt() - 1;
-        tags.append(d->client->roster()->tags().value(id, tr("Unknown tag id %1").arg(id)));
+        tags.append(d->client->buddyManager()->tags().value(id, tr("Unknown tag id %1").arg(id)));
     }
     return tags;
 }
@@ -203,7 +203,7 @@ void Buddy::update(const QStringList &fields)
 {
     IdList ids;
     ids.append(id());
-    d_func()->client->roster()->update(ids, fields);
+    d_func()->client->buddyManager()->update(ids, fields);
 }
 
 /*!
@@ -215,7 +215,7 @@ void Buddy::update(const QStringList &fields)
 void Buddy::update()
 {
     Q_D(Buddy);
-    d->client->roster()->d_func()->appendToUpdaterQueue(this);
+    d->client->buddyManager()->d_func()->appendToUpdaterQueue(this);
 }
 
 SendMessageReply *Buddy::sendMessage(const QString &body, const QString &subject)

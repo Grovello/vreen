@@ -25,113 +25,22 @@
 #include "buddymodel.h"
 #include <contact.h>
 #include <utils.h>
+#include <roster.h>
 #include <QApplication>
 
 #include <QDebug>
 
 BuddyModel::BuddyModel(QObject *parent) :
-    QAbstractListModel(parent),
-    m_friendsOnly(true),
-    m_buddyComparator(BuddyModel::CompareType::comparator, Qt::AscendingOrder)
+    QSortFilterProxyModel(parent)
 {
-    auto roles = roleNames();
-    roles[ContactRole] = "contact";
-    roles[StatusStringRole] = "statusString";
-    roles[PhotoRole] = "photo";
-    roles[NameRole] = "name";
-    roles[ActivityRole] = "activity";
-    setRoleNames(roles);
-}
 
-void BuddyModel::setRoster(Vreen::Roster *roster)
-{
-    if (!m_roster.isNull())
-        m_roster.data()->disconnect(this);
-    m_roster = roster;
-
-    setBuddies(roster->buddies());
-    connect(roster, SIGNAL(buddyAdded(Vreen::Buddy*)), SLOT(addBuddy(Vreen::Buddy*)));
-	connect(roster, SIGNAL(buddyRemoved(int)), SLOT(removeFriend(int)));
-    connect(roster, SIGNAL(syncFinished(bool)), SLOT(onSyncFinished()));
-    emit rosterChanged(roster);
-}
-
-void BuddyModel::setBuddies(const Vreen::BuddyList &list)
-{
-    clear();
-    beginInsertRows(QModelIndex(), 0, list.count());
-    m_buddyList = list;
-    endInsertRows();
-}
-
-Vreen::Roster *BuddyModel::roster() const
-{
-    return m_roster.data();
-}
-
-int BuddyModel::count() const
-{
-    return m_buddyList.count();
-}
-
-QVariant BuddyModel::data(const QModelIndex &index, int role) const
-{
-    int row = index.row();
-    switch (role) {
-    case ContactRole: {
-        auto contact = m_buddyList.at(row);
-        return qVariantFromValue(contact);
-        break;
-    }
-    case StatusStringRole: {
-        auto buddy = m_buddyList.at(row);
-        auto status = buddy ? buddy->status() : Vreen::Contact::Unknown;
-        switch (status) {
-        case Vreen::Contact::Online:
-            return tr("Online");
-        case Vreen::Contact::Offline:
-            return tr("Offline");
-        case Vreen::Contact::Away:
-            return tr("Away");
-        default:
-            break;
-        }
-    }
-    case ActivityRole: {
-        return m_buddyList.at(row)->activity();
-    }
-    case NameRole: {
-        return m_buddyList.at(row)->name();
-    }
-    case PhotoRole: {
-        auto contact = m_buddyList.at(row);
-        return contact->photoSource(Vreen::Contact::PhotoSizeMediumRec);
-    } default:
-        break;
-    }
-    return QVariant();
-}
-
-int BuddyModel::rowCount(const QModelIndex &parent) const
-{
-    Q_ASSERT(parent == QModelIndex());
-    Q_UNUSED(parent);
-    return count();
 }
 
 void BuddyModel::setFilterByName(const QString &filter)
 {
     m_filterByName = filter;
     emit filterByNameChanged(filter);
-
-    Vreen::BuddyList list;
-    foreach (auto buddy, m_roster->buddies()) {
-        if (checkContact(buddy)) {
-            auto it = qLowerBound(list.begin(), list.end(), buddy, m_buddyComparator);
-            list.insert(it, buddy);
-        }
-    }
-    setBuddies(list);
+    setFilterFixedString(m_filterByName);
 }
 
 QString BuddyModel::filterByName()
@@ -139,51 +48,27 @@ QString BuddyModel::filterByName()
     return m_filterByName;
 }
 
-void BuddyModel::clear()
+Vreen::Buddy *BuddyModel::owner() const
 {
-    beginRemoveRows(QModelIndex(), 0, m_buddyList.count());
-    m_buddyList.clear();
-    endRemoveRows();
-}
-int BuddyModel::findContact(int id) const
-{
-    for (int i = 0; i != m_buddyList.count(); i++)
-        if (m_buddyList.at(i)->id() == id)
-            return i;
-    return -1;
+    return m_owner.data();
 }
 
-void BuddyModel::addBuddy(Vreen::Buddy *contact)
+void BuddyModel::setOwner(Vreen::Buddy *owner)
 {
-    if (!checkContact(contact))
-        return;
-    int index = Vreen::lowerBound(m_buddyList, contact, m_buddyComparator);
-
-    beginInsertRows(QModelIndex(), index, index);
-    m_buddyList.insert(index, contact);
-    endInsertRows();
+    if (m_owner != owner) {
+        if (sourceModel())
+            sourceModel()->deleteLater();
+        if (owner) {
+            auto roster = new Vreen::Roster(owner);
+            setSourceModel(roster);
+        }
+        emit ownerChanged(owner);
+    }
 }
 
-void BuddyModel::removeFriend(int id)
+void BuddyModel::sync()
 {
-    int index = findContact(id);
-    if (index == -1)
-        return;
-    beginRemoveRows(QModelIndex(), index, index);
-    m_buddyList.removeAt(index);
-    endRemoveRows();
-}
-
-void BuddyModel::onSyncFinished()
-{
-    setBuddies(m_roster->buddies());
-}
-
-bool BuddyModel::checkContact(Vreen::Buddy *contact)
-{
-    if (m_friendsOnly && !contact->isFriend())
-        return false;
-    if (!m_filterByName.isEmpty())
-        return contact->name().contains(m_filterByName, Qt::CaseInsensitive);
-    return true;
+    auto roster = qobject_cast<Vreen::Roster*>(sourceModel());
+    if (roster)
+        roster->sync();
 }

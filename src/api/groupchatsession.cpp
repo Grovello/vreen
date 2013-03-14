@@ -304,7 +304,7 @@ Buddy *GroupChatSessionPrivate::addContact(int id)
     Q_Q(GroupChatSession);
     if (id) {
         if (!buddies.contains(id)) {
-            auto contact = client->roster()->buddy(id);
+            auto contact = client->buddyManager()->buddy(id);
             buddies.insert(id, contact);
             emit q->participantAdded(contact);
             if (contact == client->me()) {
@@ -322,7 +322,7 @@ void GroupChatSessionPrivate::removeContact(int id)
     if (id) {
         if (buddies.contains(id)) {
             buddies.remove(id);
-            auto contact = client->roster()->buddy(id);
+            auto contact = client->buddyManager()->buddy(id);
             emit q->participantRemoved(contact);
             if (contact == client->me())
                 emit q->isJoinedChanged(false);

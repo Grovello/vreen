@@ -31,84 +31,45 @@
 #include "friendrequest.h"
 #include <QVariant>
 #include <QStringList>
+#include <QAbstractListModel>
 
 namespace Vreen {
 class Client;
 
 class RosterPrivate;
-class VK_SHARED_EXPORT Roster : public QObject
+class VK_SHARED_EXPORT Roster : public QAbstractListModel
 {
     Q_OBJECT
     Q_DECLARE_PRIVATE(Roster)
-	Q_FLAGS(FriendRequestFlags)
+    Q_PROPERTY(Buddy* owner READ owner CONSTANT)
 public:
 
-    enum NameCase {
-        NomCase,
-        GenCase,
-        DatCase,
-        AccCase,
-        InsCase,
-        AblCase
-    };  
+    enum Roles {
+        ContactRole = Qt::UserRole + 1
+    };
 
-	enum FriendRequestFlag {
-		NeedMutualFriends,
-		NeedMessages,
-		GetOutRequests
-	};
-	Q_DECLARE_FLAGS(FriendRequestFlags, FriendRequestFlag)
-
-    Roster(Client *client, int uid = 0);
+    Roster(Buddy *owner);
     virtual ~Roster();
-    void setUid(int uid);
-    int uid() const;
 
     Buddy *owner() const;
-    Buddy *buddy(int id);
-    Buddy *buddy(int id) const;
+    QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const;
+    int rowCount(const QModelIndex &parent) const;
     BuddyList buddies() const;
-
-    QStringList tags() const;
-    void setTags(const QStringList &list);
-    Reply *getDialogs(int offset = 0, int count = 16, int previewLength = -1);
-    Reply *getMessages(int offset = 0, int count = 50, Message::Filter filter = Message::FilterNone);
 public slots:
-    void sync(const QStringList &fields = QStringList()
+    Reply *sync(const QStringList &fields = QStringList()
             << VK_COMMON_FIELDS
             );
-    Reply *update(const IdList &ids, const QStringList &fields = QStringList()
-            << VK_ALL_FIELDS
-            );
-    Reply *update(const BuddyList &buddies, const QStringList &fields = QStringList()
-            << VK_ALL_FIELDS
-            );
-	ReplyBase<FriendRequestList> *getFriendRequests(int count = 100, int offset = 0, FriendRequestFlags flags = NeedMessages);
 signals:
-    void buddyAdded(Vreen::Buddy *buddy);
-    void buddyUpdated(Vreen::Buddy *buddy);
-	void buddyRemoved(int id);
-    void tagsChanged(const QStringList &);
-    void syncFinished(bool success);
-    void uidChanged(int uid);
+    void ownerChanged(Vreen::Buddy *owner);
 protected:
     QScopedPointer<RosterPrivate> d_ptr;
 
-    //friend class Contact;
-    friend class Buddy;
-    //friend class Group;
-
-    Q_PRIVATE_SLOT(d_func(), void _q_tags_received(const QVariant &response))
     Q_PRIVATE_SLOT(d_func(), void _q_friends_received(const QVariant &response))
-    Q_PRIVATE_SLOT(d_func(), void _q_status_changed(int userId, Vreen::Contact::Status status))
-    Q_PRIVATE_SLOT(d_func(), void _q_online_changed(bool))
-    Q_PRIVATE_SLOT(d_func(), void _q_updater_handle())
 };
 
 } // namespace Vreen
 
 Q_DECLARE_METATYPE(Vreen::Roster*)
-Q_DECLARE_OPERATORS_FOR_FLAGS(Vreen::Roster::FriendRequestFlags)
 
 #endif // VK_ROSTER_H
 

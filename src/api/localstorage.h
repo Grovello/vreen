@@ -34,8 +34,8 @@ public:
     AbstractLocalStorage();
     virtual ~AbstractLocalStorage() {}
 protected:
-    virtual void loadBuddies(Roster *roster) = 0;
-    virtual void storeBuddies(Roster *roster) = 0;
+    virtual void loadBuddies(BuddyManager *roster) = 0;
+    virtual void storeBuddies(BuddyManager *roster) = 0;
     //TODO group managers
     //key value storage
     virtual void store(const QString &key, const QVariant &value) = 0;

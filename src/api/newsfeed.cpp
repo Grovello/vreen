@@ -25,7 +25,7 @@
 #include "newsfeed.h"
 #include "utils.h"
 #include "client.h"
-#include "roster.h"
+#include "buddymanager.h"
 #include "groupmanager.h"
 #include <QVariantList>
 
@@ -55,8 +55,8 @@ public:
             int uid = map.value("uid").toInt();
 
             if (uid > 0) {
-                auto roster = client->roster();
-                auto buddy = roster->buddy(uid);
+                auto manager = client->buddyManager();
+                auto buddy = manager->buddy(uid);
                 Contact::fill(buddy, map);
             } else {
                 auto manager = client->groupManager();

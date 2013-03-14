@@ -25,7 +25,7 @@
 #ifndef VK_CLIENT_H
 #define VK_CLIENT_H
 
-#include "vk_global.h"
+#include "message.h"
 #include "reply.h"
 #include <QScopedPointer>
 #include <QObject>
@@ -37,7 +37,7 @@ namespace Vreen {
 class Message;
 class Connection;
 class ClientPrivate;
-class Roster;
+class BuddyManager;
 class GroupManager;
 class LongPoll;
 class Contact;
@@ -54,9 +54,9 @@ class VK_SHARED_EXPORT Client : public QObject
     Q_PROPERTY(QString login READ login WRITE setLogin NOTIFY loginChanged DESIGNABLE true)
     Q_PROPERTY(bool online READ isOnline NOTIFY onlineStateChanged DESIGNABLE true)
     Q_PROPERTY(State connectionState READ connectionState NOTIFY connectionStateChanged DESIGNABLE true)
-    Q_PROPERTY(Vreen::Roster* roster READ roster NOTIFY rosterChanged DESIGNABLE true)
-    Q_PROPERTY(Vreen::GroupManager* groupManager READ groupManager NOTIFY groupManagerChanged DESIGNABLE true)
-    Q_PROPERTY(Vreen::LongPoll* longPoll READ longPoll NOTIFY longPollChanged DESIGNABLE true)
+    Q_PROPERTY(Vreen::BuddyManager* buddyManager READ buddyManager CONSTANT DESIGNABLE true)
+    Q_PROPERTY(Vreen::GroupManager* groupManager READ groupManager CONSTANT DESIGNABLE true)
+    Q_PROPERTY(Vreen::LongPoll* longPoll READ longPoll CONSTANT DESIGNABLE true)
     Q_PROPERTY(Vreen::Buddy* me READ me NOTIFY meChanged DESIGNABLE true)
     Q_PROPERTY(Vreen::Connection* connection READ connection WRITE setConnection NOTIFY connectionChanged DESIGNABLE true)
     Q_PROPERTY(QString activity READ activity WRITE setActivity NOTIFY activityChanged DESIGNABLE true)
@@ -102,13 +102,9 @@ public:
     void setTrackMessages(bool set);
 
     Connection *connection() const;
-    Connection *connection();
     void setConnection(Connection *connection);
-    Roster *roster();
-    Roster *roster() const;
-    LongPoll *longPoll();
+    BuddyManager *buddyManager() const;
     LongPoll *longPoll() const;
-    GroupManager *groupManager();
     GroupManager *groupManager() const;
 
     Reply *request(const QUrl &);
@@ -119,8 +115,9 @@ public:
     Reply *getMessage(int mid, int previewLength = 0);
     Reply *addLike(int ownerId, int postId, bool retweet = false, const QString &message = QString()); //TODO move method
     Reply *deleteLike(int ownerId, int postId); //TODO move method
+    Reply *getDialogs(int count = 16, int offset = 0, int previewLength = -1); //TODO move method
+    Reply *getMessages(int count = 50, int offset = 0, Message::Filter filter = Message::FilterNone); //TODO move method
 
-    Q_INVOKABLE Buddy *me();
     Buddy *me() const;
     Q_INVOKABLE Contact *contact(int id) const;
     int id() const;
@@ -136,9 +133,6 @@ signals:
     void replyCreated(Vreen::Reply*);
     void error(Vreen::Client::Error error);
     void onlineStateChanged(bool online);
-    void rosterChanged(Vreen::Roster*);
-    void groupManagerChanged(Vreen::GroupManager*);
-    void longPollChanged(Vreen::LongPoll*);
     void meChanged(Vreen::Buddy *me);
     void activityChanged(const QString &activity);
     void invisibleChanged(bool set);

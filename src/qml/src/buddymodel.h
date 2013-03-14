@@ -25,76 +25,34 @@
 #ifndef CONTACTSMODEL_H
 #define CONTACTSMODEL_H
 
-#include <QAbstractListModel>
+#include <QSortFilterProxyModel>
 #include <roster.h>
 #include <utils.h>
 #include <QPointer>
 
-class BuddyModel : public QAbstractListModel
+class BuddyModel : public QSortFilterProxyModel
 {
     Q_OBJECT
 
-    Q_PROPERTY(Vreen::Roster *roster READ roster WRITE setRoster NOTIFY rosterChanged)
+    Q_PROPERTY(Vreen::Buddy* owner READ owner WRITE setOwner NOTIFY ownerChanged)
     Q_PROPERTY(QString filterByName READ filterByName WRITE setFilterByName NOTIFY filterByNameChanged)
 public:
-    enum Roles {
-        ContactRole = Qt::UserRole + 1,
-        StatusStringRole,
-        NameRole,
-        ActivityRole,
-        PhotoRole
-    };
-
-    struct CompareType
-    {
-        QString name;
-        int status;
-        inline friend bool operator <(const BuddyModel::CompareType &a, const BuddyModel::CompareType &b)
-        {
-            int less = a.name.compare(b.name);
-            if (less)
-                return less > 0;
-            return a.status < b.status;
-        }
-        inline static CompareType comparator(Vreen::Buddy * const& buddy)
-        {
-            BuddyModel::CompareType type = {
-                buddy->name(),
-                buddy->status()
-            };
-            return type;
-        }
-    };
-
     explicit BuddyModel(QObject *parent = 0);
     
-    void setRoster(Vreen::Roster *roster);
-    Vreen::Roster *roster() const;
     int count() const;
-    virtual QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const;
-    virtual int rowCount(const QModelIndex &parent) const;
     void setFilterByName(const QString &filter);
     QString filterByName();
-    void clear();
+    Vreen::Buddy *owner() const;
+    void setOwner(Vreen::Buddy* owner);
 public slots:
-    int findContact(int id) const;
+    void sync();
 signals:
-    void rosterChanged(Vreen::Roster*);
     void filterByNameChanged(const QString &filter);
-private slots:
-    void addBuddy(Vreen::Buddy *);
-    void removeFriend(int id);
-    void onSyncFinished();
-protected:
-    bool checkContact(Vreen::Buddy *);
-    void setBuddies(const Vreen::BuddyList &list);
-private:
-    QPointer<Vreen::Roster> m_roster;
-    Vreen::BuddyList m_buddyList;
-    QString m_filterByName;
-    bool m_friendsOnly;
+    void ownerChanged(Vreen::Buddy* arg);
 
-    Vreen::Comparator<Vreen::Buddy*, CompareType> m_buddyComparator;
+private:
+    QPointer<Vreen::Buddy> m_owner;
+    QString m_filterByName;
 };
 
 #endif // CONTACTSMODEL_H

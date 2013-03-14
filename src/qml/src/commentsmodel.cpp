@@ -76,14 +76,14 @@ QVariant CommentsModel::data(const QModelIndex &index, int role) const
     int row = index.row();
 
     auto comment = m_comments.at(row);
-    auto roster = m_contact.data()->client()->roster();
+    auto client = m_contact->client();
     switch (role) {
     case IdRole:
         return comment.value("cid");
         break;
     case FromRole: {
         int source = comment.value("uid").toInt();
-        return qVariantFromValue(roster->buddy(source));
+        return qVariantFromValue(client->contact(source));
     }
     case DateRole:
         return QDateTime::fromTime_t(comment.value("date").toUInt());

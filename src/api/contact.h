@@ -190,8 +190,8 @@ signals:
 protected:
     Buddy(int id, Client *client);
 
-    friend class Roster;
-    friend class RosterPrivate;
+    friend class BuddyManager;
+    friend class BuddyManagerPrivate;
 
 	Q_PRIVATE_SLOT(d_func(), void _q_friends_add_finished(const QVariant &response))
 	Q_PRIVATE_SLOT(d_func(), void _q_friends_delete_finished(const QVariant &response))
